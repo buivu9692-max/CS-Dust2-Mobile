@@ -1,40 +1,36 @@
+
 name: Build CS Dust2 Mobile APK
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
-  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
+      - name: Extract source
+        run: |
+          unzip -o project-source.zip -d extracted
+          ROOT=$(find extracted -type f -name settings.gradle -printf '%h\n' | head -1)
+          echo "ROOT=$ROOT" >> "$GITHUB_ENV"
+          echo "Found project: $ROOT"
+
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: 17
-
-      - name: Extract project
-        run: |
-          ls -la
-          unzip -o project-source.zip -d extracted
+          java-version: '17'
 
       - name: Build APK
         run: |
-          cd extracted
-          find . -name gradlew -exec chmod +x {} \;
-          if [ -f gradlew ]; then
-            ./gradlew assembleDebug
-          else
-            gradle assembleDebug
-          fi
+          cd "$ROOT"
+          gradle assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: CS-Dust2-APK
-          path: extracted/**/build/outputs/apk/**/*.apk
+          name: CS-Dust2-Mobile-APK
+          path: ${{ env.ROOT }}/app/build/outputs/apk/debug/*.apk
